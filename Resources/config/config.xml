@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+	<parameters>
+		<parameter key="adyen.service.class">Sparkling\AdyenBundle\Service\AdyenService</parameter>
+		<parameter key="adyen.notification.class">Sparkling\AdyenBundle\Service\NotificationService</parameter>
+		<parameter key="adyen.account_entity"></parameter>
+		<parameter key="adyen.plan_entity"></parameter>
+		<parameter key="adyen.transaction_entity"></parameter>
+	</parameters>
+
+	<services>
+		<service id="adyen.service" class="%adyen.service.class%">
+            <argument>%adyen.platform%</argument>
+			<argument>%adyen.merchant_account%</argument>
+			<argument>%adyen.skin%</argument>
+			<argument>%adyen.shared_secret%</argument>
+			<argument>%adyen.currency%</argument>
+			<argument type="collection">
+				<argument key="account">%adyen.account_entity%</argument>
+				<argument key="plan">%adyen.plan_entity%</argument>
+				<argument key="transaction">%adyen.transaction_entity%</argument>
+		    </argument>
+			<argument type="collection">
+				<argument key="username">%adyen.webservice_username%</argument>
+				<argument key="password">%adyen.webservice_password%</argument>
+		    </argument>
+			<call method="setEventDispatcher">
+				 <argument type="service" id="event_dispatcher" />
+			</call>
+			<call method="setEntityManager">
+				 <argument type="service" id="doctrine.orm.default_entity_manager" />
+			</call>
+        </service>
+
+		<service id="adyen.notification" class="%adyen.notification.class%">
+			<argument type="service" id="adyen.service" />
+			<call method="setEntityManager">
+				 <argument type="service" id="doctrine.orm.default_entity_manager" />
+			</call>
+        </service>
+	</services>
+</container>
