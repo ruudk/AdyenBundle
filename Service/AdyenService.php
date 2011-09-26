@@ -64,12 +64,13 @@ class AdyenService
 	 */
 	public function setup(Account $account, Plan $plan, $returnUrl)
 	{
-		$paymentAmount = $this->priceToCents($plan->getPrice());
+		$paymentAmount = $this->priceToCents($account->getPlanPrice());
 
 		$transaction = new $this->entities['transaction'];
 		$transaction->setAccount($account);
 		$transaction->setType('setup');
 		$transaction->setAmount($paymentAmount);
+		$transaction->setCurrency($account->getPlanCurrency());
 
 		$this->em->persist($transaction);
 		$this->em->flush();
@@ -78,7 +79,7 @@ class AdyenService
 		$parameters = array(
 			'merchantReference' => 'Setup ' . $transaction->getId(),
 			'paymentAmount'     => $paymentAmount,
-			'currencyCode'      => $this->currency,
+			'currencyCode'      => $account->getPlanCurrency(),
 			'shipBeforeDate'    => $today->format('Y-m-d'),
 			'skinCode'          => $this->skin,
 			'merchantAccount'   => $this->merchantAccount,
@@ -109,6 +110,7 @@ class AdyenService
 		$transaction->setAccount($account);
 		$transaction->setType('update');
 		$transaction->setAmount($paymentAmount);
+		$transaction->setCurrency($account->getPlanCurrency());
 
 		$this->em->persist($transaction);
 		$this->em->flush();
@@ -117,7 +119,7 @@ class AdyenService
 		$parameters = array(
 			'merchantReference' => 'Update ' . $transaction->getId(),
 			'paymentAmount'     => $paymentAmount,
-			'currencyCode'      => $this->currency,
+			'currencyCode'      => $account->getPlanCurrency(),
 			'shipBeforeDate'    => $today->format('Y-m-d'),
 			'skinCode'          => $this->skin,
 			'merchantAccount'   => $this->merchantAccount,
@@ -177,7 +179,7 @@ class AdyenService
 
 		if($transaction->isCancelled())
 			return true;
-		
+
 		$result = $this->modification('cancel', array(
 			'merchantAccount' => $this->merchantAccount,
 			'originalReference' => $transaction->getReference()
@@ -208,7 +210,7 @@ class AdyenService
 					'recurringDetailReference'  => $recurringReference
 				)
 			));
-			
+
 			if($result->result && $result->result->response == '[detail-successfully-disabled]')
 				return true;
 			elseif($result->result && $result->result->response == '[all-details-successfully-disabled]')
@@ -245,12 +247,14 @@ class AdyenService
 		$client = $this->getSoapClient('Payment');
 		try
 		{
-			$paymentAmount = $this->priceToCents($account->getPlan()->getPrice());
+			$plan = $account->getPlan();
+			$paymentAmount = $this->priceToCents($plan->getPrice($account->getPlanCurrency()));
 
 			$transaction = new $this->entities['transaction'];
 			$transaction->setAccount($account);
 			$transaction->setType('recurring');
 			$transaction->setAmount($paymentAmount);
+			$transaction->setCurrency($account->getPlanCurrency());
 
 			$this->em->persist($transaction);
 
@@ -267,7 +271,7 @@ class AdyenService
 					),
 					"amount" => array(
 						"value" => $paymentAmount,
-						"currency" => $this->currency
+						"currency" => $account->getPlanCurrency()
 					),
 					'merchantAccount' => $this->merchantAccount,
 					'reference' => 'Recurring ' . $transaction->getId(),
