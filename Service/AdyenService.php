@@ -333,7 +333,16 @@ class AdyenService
 			if(isset($array['result']['details']['RecurringDetail']['recurringDetailReference']))
 				$array['result']['details']['RecurringDetail'] = array($array['result']['details']['RecurringDetail']);
 
-			return $array['result']['details']['RecurringDetail'];
+			$contracts = array();
+			foreach($array['result']['details']['RecurringDetail'] AS $key => $details)
+			{
+				$date = new \DateTime($details['creationDate']);
+				$contracts[$date->format('U')] = $details;
+			}
+
+			krsort($contracts);
+
+			return $contracts;
 		}
 		catch(\SoapFault $exception)
 		{
