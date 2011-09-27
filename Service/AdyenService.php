@@ -64,15 +64,27 @@ class AdyenService
 	 */
 	public function setup(Account $account, Plan $plan, $returnUrl)
 	{
-		$paymentAmount = $this->priceToCents($account->getPlanPrice());
+		$paymentAmount = 50;
+
+		$today = new \DateTime();
+		if($account->getPlanExpiresAt() <= $today)
+		{
+			/**
+			 * When the plan is already expired we have to charge the first month directly
+			 */
+			$paymentAmount = $this->priceToCents($account->getPlanPrice(), $account->getPlanTax());
+
+			$account->hasChargePending(true);
+			$this->em->persist($account);
+		}
 
 		$transaction = new $this->entities['transaction'];
 		$transaction->setAccount($account);
 		$transaction->setType('setup');
 		$transaction->setAmount($paymentAmount);
 		$transaction->setCurrency($account->getPlanCurrency());
-
 		$this->em->persist($transaction);
+
 		$this->em->flush();
 
 		$today = new \DateTime();
@@ -248,7 +260,7 @@ class AdyenService
 		try
 		{
 			$plan = $account->getPlan();
-			$paymentAmount = $this->priceToCents($plan->getPrice($account->getPlanCurrency()));
+			$paymentAmount = $this->priceToCents($plan->getPrice($account->getPlanCurrency(), $account->getPlanTax()));
 
 			$transaction = new $this->entities['transaction'];
 			$transaction->setAccount($account);
@@ -283,8 +295,7 @@ class AdyenService
 
 			$chargeEvent = new ChargeEvent(
 	            $transaction,
-	            $result->paymentResult->resultCode == 'Authorised',
-	            $result
+	            $result->paymentResult->resultCode == 'Authorised'
             );
             $this->dispatcher->dispatch('adyen.charge', $chargeEvent);
 
@@ -417,14 +428,52 @@ class AdyenService
 	{
 		$account = $transaction->getAccount();
 
-		$account->extendPlan();
-
+		/**
+		 * Set the new recurring reference
+		 */
 		$account->setRecurringReference($notification['pspReference']);
 		$account->hasRecurringSetup(true);
-
+		$account->isExpired(false);
 		$this->em->persist($account);
 
+		/**
+		 * There can be 2 different types of setupTransactions:
+		 *   1. 50 cent recurring authorisation
+		 *   2. Charge for the first month
+		 */
+		if($transaction->getAmount() == 50)
+		{
+			/**
+			 * This is just a authorisation to get the recurringContract running
+			 *
+			 * So we are just goign to cancel the transaction at Adyen
+			 */
+			if(!$this->cancel($transaction))
+				$transaction->log('Cancel failed');
+		}
+		else
+		{
+			/**
+			 * This is the payment for the first month
+			 */
+			$account->extendPlan();
+
+			/**
+			 * Fire a charge event
+			 */
+            $this->dispatcher->dispatch('adyen.charge', new ChargeEvent($transaction, true));
+		}
+
+		/**
+		 * Load the new contract
+		 */
 		$this->loadContract($account);
+
+		/**
+		 * Log errors
+		 */
+		$transaction->log($this->getError());
+		$this->em->persist($transaction);
 	}
 
 	protected function processUpdateNotification(array $notification, Transaction $transaction)
@@ -518,9 +567,12 @@ class AdyenService
 		return base64_encode(hash_hmac('sha1', implode($hmac), $this->sharedSecret, true));
 	}
 
-	protected function priceToCents($price)
+	protected function priceToCents($price, $tax = null)
 	{
-		return $price * 100;
+		if(isset($tax) && $tax > 0)
+			$price *= 1 + ($tax / 100);
+
+		return round($price * 100, 0);
 	}
 
 	protected function toArray($d)

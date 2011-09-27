@@ -11,11 +11,10 @@ class ChargeEvent extends Event
 	protected $success = false;
     protected $result;
 
-    public function __construct(Transaction $transaction, $success, \stdClass $result)
+    public function __construct(Transaction $transaction, $success)
     {
         $this->transaction = $transaction;
 	    $this->success = (bool) $success;
-        $this->result = $result;
     }
 
     public function getTransaction()
@@ -27,9 +26,4 @@ class ChargeEvent extends Event
 	{
 		return $this->success;
 	}
-
-    public function getResult()
-    {
-        return $this->result;
-    }
 }
