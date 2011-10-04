@@ -25,11 +25,6 @@ abstract class Account
 	abstract public function setCountry($country);
 	abstract public function getCountryFull();
 
-	abstract public function getPlanCurrency();
-	abstract public function getPlanPrice();
-	abstract public function getPlanPriceFormatted();
-	abstract public function getPlanTax();
-
 	abstract public function getVATNumber();
 	abstract public function setVATNumber($vat_number);
 

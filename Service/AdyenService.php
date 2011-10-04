@@ -9,6 +9,7 @@ use Sparkling\AdyenBundle\Entity\Account;
 use Sparkling\AdyenBundle\Entity\Plan;
 use Sparkling\AdyenBundle\Entity\Transaction;
 use Sparkling\AdyenBundle\Event\ChargeEvent;
+use Sparkling\AdyenBundle\Event\PriceEvent;
 
 class AdyenService
 {
@@ -64,25 +65,41 @@ class AdyenService
 	 */
 	public function setup(Account $account, Plan $plan, $returnUrl)
 	{
-		$paymentAmount = 50;
+		$transaction = new $this->entities['transaction'];
 
 		$today = new \DateTime();
 		if($account->getPlanExpiresAt() <= $today)
 		{
 			/**
 			 * When the plan is already expired we have to charge the first month directly
+			 *
+			 * Fire up a PriceEvent to allow modification of the price and tax by developers
 			 */
-			$paymentAmount = $this->priceToCents($account->getPlanPrice(), $account->getPlanTax());
+			$priceEvent = new PriceEvent($account, $plan);
+            $this->dispatcher->dispatch('adyen.price', $priceEvent);
+
+			$paymentAmount = $priceEvent->getCents($applyDiscount = true);
+
+			$transaction->setAmount($priceEvent->getCents($applyDiscount = false));
+			$transaction->setDiscount($priceEvent->getDiscount());
 
 			$account->hasChargePending(true);
 			$this->em->persist($account);
 		}
+		else
+		{
+			/**
+			 * Set the paymentAmount to 50 cent and cancel it on a successful authorisation
+			 */
 
-		$transaction = new $this->entities['transaction'];
+			$paymentAmount = 50;
+
+			$transaction->setAmount($paymentAmount);
+		}
+
 		$transaction->setAccount($account);
 		$transaction->setType('setup');
-		$transaction->setAmount($paymentAmount);
-		$transaction->setCurrency($account->getPlanCurrency());
+		$transaction->setCurrency($plan->getCurrency());
 		$this->em->persist($transaction);
 
 		$this->em->flush();
@@ -91,7 +108,7 @@ class AdyenService
 		$parameters = array(
 			'merchantReference' => 'Setup ' . $transaction->getId(),
 			'paymentAmount'     => $paymentAmount,
-			'currencyCode'      => $account->getPlanCurrency(),
+			'currencyCode'      => $plan->getCurrency(),
 			'shipBeforeDate'    => $today->format('Y-m-d'),
 			'skinCode'          => $this->skin,
 			'merchantAccount'   => $this->merchantAccount,
@@ -122,7 +139,7 @@ class AdyenService
 		$transaction->setAccount($account);
 		$transaction->setType('update');
 		$transaction->setAmount($paymentAmount);
-		$transaction->setCurrency($account->getPlanCurrency());
+		$transaction->setCurrency($account->getPlan()->getCurrency());
 
 		$this->em->persist($transaction);
 		$this->em->flush();
@@ -131,7 +148,7 @@ class AdyenService
 		$parameters = array(
 			'merchantReference' => 'Update ' . $transaction->getId(),
 			'paymentAmount'     => $paymentAmount,
-			'currencyCode'      => $account->getPlanCurrency(),
+			'currencyCode'      => $account->getPlan()->getCurrency(),
 			'shipBeforeDate'    => $today->format('Y-m-d'),
 			'skinCode'          => $this->skin,
 			'merchantAccount'   => $this->merchantAccount,
@@ -260,13 +277,19 @@ class AdyenService
 		try
 		{
 			$plan = $account->getPlan();
-			$paymentAmount = $this->priceToCents($plan->getPrice($account->getPlanCurrency(), $account->getPlanTax()));
+
+			/**
+			 * Fire up a PriceEvent to allow modification of the price and tax by developers
+			 */
+			$priceEvent = new PriceEvent($account, $plan);
+            $this->dispatcher->dispatch('adyen.price', $priceEvent);
 
 			$transaction = new $this->entities['transaction'];
 			$transaction->setAccount($account);
 			$transaction->setType('recurring');
-			$transaction->setAmount($paymentAmount);
-			$transaction->setCurrency($account->getPlanCurrency());
+			$transaction->setAmount($priceEvent->getCents($applyDiscount = false));
+			$transaction->setDiscount($priceEvent->getdiscount());
+			$transaction->setCurrency($plan->getCurrency());
 
 			$this->em->persist($transaction);
 
@@ -275,31 +298,54 @@ class AdyenService
 
 			$this->em->flush();
 
-			$result = $client->authorise(array(
-				'paymentRequest' => array(
-					'selectedRecurringDetailReference' => $account->getRecurringReference(),
-					'recurring' => array(
-						'contract' => 'RECURRING'
-					),
-					"amount" => array(
-						"value" => $paymentAmount,
-						"currency" => $account->getPlanCurrency()
-					),
-					'merchantAccount' => $this->merchantAccount,
-					'reference' => 'Recurring ' . $transaction->getId(),
-					'shopperEmail' => $account->getEmail(),
-					'shopperReference' => $account->getId(),
-					'shopperInteraction' => 'ContAuth',
-				)
-			));
+			if($priceEvent->getDiscount() == 100)
+			{
+				/**
+				 * No need to charge as the discount is 100% (free)
+				 */
+				$transaction->isProcessed(true);
+				$transaction->setReference('free');
+				$this->em->persist($transaction);
+				
+				$this->processRecurringNotification(array(), $transaction);
 
-			$chargeEvent = new ChargeEvent(
-	            $transaction,
-	            $result->paymentResult->resultCode == 'Authorised'
-            );
-            $this->dispatcher->dispatch('adyen.charge', $chargeEvent);
+				$this->em->flush();
 
-			return $result->paymentResult->resultCode;
+				return true;
+			}
+			else
+			{
+				/**
+				 * Charge it
+				 */
+				$result = $client->authorise(array(
+					'paymentRequest' => array(
+						'selectedRecurringDetailReference' => $account->getRecurringReference(),
+						'recurring' => array(
+							'contract' => 'RECURRING'
+						),
+						"amount" => array(
+							"value" => $priceEvent->getCents($applyDiscount = true),
+							"currency" => $plan->getCurrency()
+						),
+						'merchantAccount' => $this->merchantAccount,
+						'reference' => 'Recurring ' . $transaction->getId(),
+						'shopperEmail' => $account->getEmail(),
+						'shopperReference' => $account->getId(),
+						'shopperInteraction' => 'ContAuth',
+					)
+				));
+
+				$chargeEvent = new ChargeEvent(
+					$transaction,
+					$result->paymentResult->resultCode == 'Authorised'
+				);
+				$this->dispatcher->dispatch('adyen.charge', $chargeEvent);
+
+				$this->em->flush();
+
+				return true;
+			}
 		}
 		catch(\SoapFault $exception)
 		{
@@ -345,13 +391,16 @@ class AdyenService
 				$array['result']['details']['RecurringDetail'] = array($array['result']['details']['RecurringDetail']);
 
 			$contracts = array();
-			foreach($array['result']['details']['RecurringDetail'] AS $key => $details)
+			if(isset($array['result']['details']['RecurringDetail']))
 			{
-				$date = new \DateTime($details['creationDate']);
-				$contracts[$date->format('U')] = $details;
-			}
+				foreach($array['result']['details']['RecurringDetail'] AS $key => $details)
+				{
+					$date = new \DateTime($details['creationDate']);
+					$contracts[$date->format('U')] = $details;
+				}
 
-			krsort($contracts);
+				krsort($contracts);
+			}
 
 			return $contracts;
 		}

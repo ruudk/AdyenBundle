@@ -18,6 +18,9 @@ abstract class Transaction
 	abstract public function getAmount();
 	abstract public function setAmount($amount);
 
+	abstract public function getDiscount();
+	abstract public function setDiscount($discount);
+
 	abstract public function getCurrency();
 	abstract public function setCurrency($currency);
 
