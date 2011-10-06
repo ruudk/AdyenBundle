@@ -616,14 +616,6 @@ class AdyenService
 		return base64_encode(hash_hmac('sha1', implode($hmac), $this->sharedSecret, true));
 	}
 
-	protected function priceToCents($price, $tax = null)
-	{
-		if(isset($tax) && $tax > 0)
-			$price *= 1 + ($tax / 100);
-
-		return round($price * 100, 0);
-	}
-
 	protected function toArray($d)
 	{
 		if (is_object($d)) {
