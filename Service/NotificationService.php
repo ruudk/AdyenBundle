@@ -17,9 +17,15 @@ class NotificationService
      */
 	protected $em;
 
-	public function __construct(AdyenService $adyen)
+	/**
+	 * @var string
+	 */
+	protected $logDirectory;
+
+	public function __construct(AdyenService $adyen, $logDirectory)
 	{
 		$this->adyen = $adyen;
+		$this->logDirectory = $logDirectory;
 	}
 
 	public function setEntityManager($em)
@@ -56,6 +62,6 @@ class NotificationService
 			'authResult'        => $item->eventCode ?: $item->authResult
 		));
 
-		file_put_contents(__DIR__ . '../../../../../adyen.log', $output, FILE_APPEND);
+		file_put_contents($this->logDirectory . '/adyen.log', $output, FILE_APPEND);
 	}
 }
