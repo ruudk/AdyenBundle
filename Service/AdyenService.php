@@ -444,7 +444,7 @@ class AdyenService
 				$transaction->isProcessed(true);
 				$transaction->setReference($notification['pspReference']);
 
-				if($notification['authResult'] == "AUTHORISATION" || $notification['authResult'] == "AUTHORISED")
+				if($notification['authResult'] == "AUTHORISED" || $notification['authResult'] == "AUTHORISATION")
 				{
 					switch($transaction->getType())
 					{
@@ -460,11 +460,19 @@ class AdyenService
 							$this->processRecurringNotification($notification, $transaction);
 							break;
 					}
-				}
-				else $transaction->log($notification['authResult']);
 
-				$this->em->persist($transaction);
-				$this->em->flush();
+					$this->em->persist($transaction);
+					$this->em->flush();
+				}
+				else
+				{
+					$transaction->log("Failure: " . $notification['authResult']);
+
+					$this->em->persist($transaction);
+					$this->em->flush();
+					
+					return false;
+				}
 			}
 
 			return true;
