@@ -62,8 +62,6 @@ class DisableContractCommand extends Command
 				else
 					$output->writeln(sprintf('Disable contract %s <error>[ Failed ]</error>', $input->getArgument('reference')));
 			}
-
-			$this->em->flush();
 		}
 		else $output->writeln('<error>Account not found</error>');
 	}

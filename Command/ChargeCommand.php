@@ -57,8 +57,6 @@ class ChargeCommand extends Command
 					$output->writeln(sprintf('%s <error>%s</error>', $account->getName(), $this->container->get('adyen.service')->getError()));
 				else
 					$output->writeln(sprintf('%s <comment>%s</comment>', $account->getName(), 'Done'));
-
-				$this->em->flush();
 			}
 		}
 		else $output->writeln('There are accounts that need to be charged.');

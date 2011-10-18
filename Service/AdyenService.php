@@ -102,6 +102,8 @@ class AdyenService
 		$transaction->setCurrency($plan->getCurrency());
 		$this->em->persist($transaction);
 
+		$this->em->flush();
+
 		$today = new \DateTime();
 		$parameters = array(
 			'merchantReference' => 'Setup ' . $transaction->getId(),
@@ -140,6 +142,7 @@ class AdyenService
 		$transaction->setCurrency($account->getPlan()->getCurrency());
 
 		$this->em->persist($transaction);
+		$this->em->flush();
 
 		$today = new \DateTime();
 		$parameters = array(
@@ -249,6 +252,7 @@ class AdyenService
 				$account->setCardExpiryYear(null);
 
 				$this->em->persist($account);
+				$this->em->flush();
 
 				return true;
 			}
@@ -292,6 +296,8 @@ class AdyenService
 			$account->hasChargePending(true);
 			$this->em->persist($account);
 
+			$this->em->flush();
+
 			if($priceEvent->getDiscount() == 100)
 			{
 				/**
@@ -302,6 +308,8 @@ class AdyenService
 				$this->em->persist($transaction);
 				
 				$this->processRecurringNotification(array(), $transaction);
+
+				$this->em->flush();
 
 				return true;
 			}
@@ -334,6 +342,8 @@ class AdyenService
 				);
 				$this->dispatcher->dispatch('adyen.charge', $chargeEvent);
 
+				$this->em->flush();
+
 				return true;
 			}
 		}
@@ -348,6 +358,8 @@ class AdyenService
 			$transaction->log($client->__getLastRequest());
 			$transaction->log($client->__getLastResponse());
 			$this->em->persist($transaction);
+
+			$this->em->flush();
 
 			return false;
 		}
@@ -414,6 +426,7 @@ class AdyenService
 			$account->setCardExpiryYear($firstContract['card']['expiryYear']);
 
 			$this->em->persist($account);
+			$this->em->flush();
 
 			return true;
 		}
@@ -449,12 +462,14 @@ class AdyenService
 					}
 
 					$this->em->persist($transaction);
+					$this->em->flush();
 				}
 				else
 				{
 					$transaction->log("Failure: " . $notification['authResult']);
 
 					$this->em->persist($transaction);
+					$this->em->flush();
 					
 					return false;
 				}
