@@ -6,28 +6,6 @@ abstract class Account
 {
     abstract public function getId();
 
-	abstract public function getCompanyName();
-	abstract public function setCompanyName($company_name);
-
-	abstract public function getAddress1();
-	abstract public function setAddress1($address1);
-
-	abstract public function getAddress2();
-	abstract public function setAddress2($address2);
-
-	abstract public function getZipcode();
-	abstract public function setZipcode($zipcode);
-
-	abstract public function getCity();
-	abstract public function setCity($city);
-
-	abstract public function getCountry();
-	abstract public function setCountry($country);
-	abstract public function getCountryFull();
-
-	abstract public function getVATNumber();
-	abstract public function setVATNumber($vat_number);
-
 	abstract public function isExpired($set = null);
 
 	abstract public function isTrial($set = null);
