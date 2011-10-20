@@ -1,0 +1,248 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions targetNamespace="http://notification.services.adyen.com" xmlns:ns1="http://common.services.adyen.com" xmlns:soapenc12="http://www.w3.org/2003/05/soap-encoding" xmlns:tns="http://notification.services.adyen.com" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap11="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soapenc11="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <wsdl:types>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://notification.services.adyen.com">
+<xsd:complexType name="NotificationRequest">
+<xsd:sequence>
+<xsd:element minOccurs="0" name="live" type="xsd:boolean"/>
+<xsd:element minOccurs="0" name="notificationItems" nillable="true" type="tns:ArrayOfNotificationRequestItem"/>
+</xsd:sequence>
+</xsd:complexType>
+<xsd:complexType name="ArrayOfNotificationRequestItem">
+<xsd:sequence>
+<xsd:element maxOccurs="unbounded" minOccurs="0" name="NotificationRequestItem" nillable="true" type="tns:NotificationRequestItem"/>
+</xsd:sequence>
+</xsd:complexType>
+<xsd:complexType name="NotificationRequestItem">
+<xsd:sequence>
+<xsd:element minOccurs="0" name="additionalData" nillable="true" type="tns:anyType2anyTypeMap"/>
+<xsd:element minOccurs="0" name="amount" nillable="true" type="ns1:Amount"/>
+<xsd:element minOccurs="0" name="eventCode" nillable="true" type="xsd:string"/>
+<xsd:element minOccurs="0" name="eventDate" type="xsd:dateTime"/>
+<xsd:element minOccurs="0" name="merchantAccountCode" nillable="true" type="xsd:string"/>
+<xsd:element minOccurs="0" name="merchantReference" nillable="true" type="xsd:string"/>
+<xsd:element minOccurs="0" name="operations" nillable="true" type="tns:ArrayOfString"/>
+<xsd:element minOccurs="0" name="originalReference" nillable="true" type="xsd:string"/>
+<xsd:element minOccurs="0" name="paymentMethod" nillable="true" type="xsd:string"/>
+<xsd:element minOccurs="0" name="pspReference" nillable="true" type="xsd:string"/>
+<xsd:element minOccurs="0" name="reason" nillable="true" type="xsd:string"/>
+<xsd:element minOccurs="0" name="success" type="xsd:boolean"/>
+</xsd:sequence>
+</xsd:complexType>
+<xsd:complexType name="ArrayOfString">
+<xsd:sequence>
+<xsd:element maxOccurs="unbounded" minOccurs="0" name="string" nillable="true" type="xsd:string"/>
+</xsd:sequence>
+</xsd:complexType>
+<xsd:complexType name="anyType2anyTypeMap">
+<xsd:sequence>
+<xsd:element maxOccurs="unbounded" minOccurs="0" name="entry">
+<xsd:complexType>
+<xsd:sequence>
+<xsd:element maxOccurs="1" minOccurs="0" name="key" type="xsd:anyType"/>
+<xsd:element maxOccurs="1" minOccurs="0" name="value" type="xsd:anyType"/>
+</xsd:sequence>
+</xsd:complexType>
+</xsd:element>
+</xsd:sequence>
+</xsd:complexType>
+<xsd:element name="sendNotification">
+<xsd:complexType>
+<xsd:sequence>
+<xsd:element maxOccurs="1" minOccurs="1" name="notification" nillable="true" type="tns:NotificationRequest"/>
+</xsd:sequence>
+</xsd:complexType>
+</xsd:element>
+<xsd:element name="sendNotificationResponse">
+<xsd:complexType>
+<xsd:sequence>
+<xsd:element maxOccurs="1" minOccurs="1" name="notificationResponse" nillable="true" type="xsd:string"/>
+</xsd:sequence>
+</xsd:complexType>
+</xsd:element>
+<xsd:element name="ServiceException" type="ns1:ServiceException"/>
+</xsd:schema>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://common.services.adyen.com">
+<xsd:complexType name="Amount">
+<xsd:sequence>
+<xsd:element minOccurs="0" name="currency" nillable="true" type="xsd:string"/>
+<xsd:element minOccurs="0" name="value" type="xsd:long"/>
+</xsd:sequence>
+</xsd:complexType>
+<xsd:complexType name="ServiceException">
+<xsd:sequence>
+<xsd:element minOccurs="0" name="error" nillable="true" type="ns1:Error"/>
+<xsd:element minOccurs="0" name="type" nillable="true" type="ns1:Type"/>
+</xsd:sequence>
+</xsd:complexType>
+<xsd:simpleType name="Type">
+<xsd:restriction base="xsd:string">
+<xsd:enumeration value="internal"/>
+<xsd:enumeration value="validation"/>
+<xsd:enumeration value="security"/>
+<xsd:enumeration value="configuration"/>
+</xsd:restriction>
+</xsd:simpleType>
+<xsd:simpleType name="Error">
+<xsd:restriction base="xsd:string">
+<xsd:enumeration value="Unknown"/>
+<xsd:enumeration value="NotAllowed"/>
+<xsd:enumeration value="NoAmountSpecified"/>
+<xsd:enumeration value="InvalidCardNumber"/>
+<xsd:enumeration value="UnableToDetermineVariant"/>
+<xsd:enumeration value="CVCisNotTheRightLength"/>
+<xsd:enumeration value="InvalidLoyaltyAmountSpecified"/>
+<xsd:enumeration value="InvalidPaRes3dSecure"/>
+<xsd:enumeration value="SessionAlreadyUsed"/>
+<xsd:enumeration value="RecurringNotEnabled"/>
+<xsd:enumeration value="InvalidBankAccountNumber"/>
+<xsd:enumeration value="InvalidVariant"/>
+<xsd:enumeration value="InvalidBankDetailsMissing"/>
+<xsd:enumeration value="InvalidBankCountry"/>
+<xsd:enumeration value="BankCountryNotSupported"/>
+<xsd:enumeration value="OpenInvoiceLinesMissing"/>
+<xsd:enumeration value="OpenInvoiceLineInvalid"/>
+<xsd:enumeration value="OpenInvoiceLinesInvalidTotalAmount"/>
+<xsd:enumeration value="InvalidDateOfBirth"/>
+<xsd:enumeration value="InvalidBillingAddress"/>
+<xsd:enumeration value="InvalidDeliveryAddress"/>
+<xsd:enumeration value="InvalidShopperName"/>
+<xsd:enumeration value="MissingShopperEmail"/>
+<xsd:enumeration value="MissingShopperReference"/>
+<xsd:enumeration value="MissingPhoneNumber"/>
+<xsd:enumeration value="MobilePhoneNumberOnly"/>
+<xsd:enumeration value="InvalidPhoneNumber"/>
+<xsd:enumeration value="RecurringInvalidContract"/>
+<xsd:enumeration value="BankAccountOrBankLocationIdNotValid"/>
+<xsd:enumeration value="AccountHolderMissing"/>
+<xsd:enumeration value="CardHolderNameMissing"/>
+<xsd:enumeration value="InvalidExpiry"/>
+<xsd:enumeration value="MissingMerchantReference"/>
+<xsd:enumeration value="BillingAddressCityProblem"/>
+<xsd:enumeration value="BillingAddressStreetProblem"/>
+<xsd:enumeration value="BillingAddressHouseNumberOrNameProblem"/>
+<xsd:enumeration value="BillingAddressCountryProblem"/>
+<xsd:enumeration value="BillingAddressStateOrProvinceProblem"/>
+<xsd:enumeration value="OpenInvoiceFailedToRetrieveDetails"/>
+<xsd:enumeration value="InvalidAmount"/>
+<xsd:enumeration value="UnsupportedCurrency"/>
+<xsd:enumeration value="RecurringRequiredFields"/>
+<xsd:enumeration value="InvalidCardExpiryOnInPast"/>
+<xsd:enumeration value="InvalidCardExpiry"/>
+<xsd:enumeration value="BankNameOrBankLocationIsNotValid"/>
+<xsd:enumeration value="InvalidIdealMerchantReturnUrl"/>
+<xsd:enumeration value="InvalidCardStartDateInFuture"/>
+<xsd:enumeration value="InvalidIssuerCountryCode"/>
+<xsd:enumeration value="InvalidSocialSecurityNumber"/>
+<xsd:enumeration value="DeliveryAddressCityProblem"/>
+<xsd:enumeration value="DeliveryAddressStreetProblem"/>
+<xsd:enumeration value="DeliveryAddressHouseNumberOrNameProblem"/>
+<xsd:enumeration value="DeliveryAddressCountryProblem"/>
+<xsd:enumeration value="DeliveryAddressStateOrProvinceProblem"/>
+<xsd:enumeration value="InvalidInstallments"/>
+<xsd:enumeration value="InvalidCVC"/>
+<xsd:enumeration value="MissingAdditionalData"/>
+<xsd:enumeration value="MissingAcquirer"/>
+<xsd:enumeration value="MissingAuthorisationMid"/>
+<xsd:enumeration value="MissingFields"/>
+<xsd:enumeration value="MissingRequiredField"/>
+<xsd:enumeration value="InvalidNumberOfRequests"/>
+<xsd:enumeration value="PayoutStoreDetailNotAllowed"/>
+<xsd:enumeration value="Invoice_MissingInvoiceProject"/>
+<xsd:enumeration value="Invoice_MissingInvoiceBatch"/>
+<xsd:enumeration value="Invoice_MissingCreditorAccount"/>
+<xsd:enumeration value="Invoice_MissingProjectCode"/>
+<xsd:enumeration value="Invoice_CreditorAccountNotFound"/>
+<xsd:enumeration value="Invoice_ProjectNotFound"/>
+<xsd:enumeration value="Invoice_InvoiceProjectCouldNotBeCreated"/>
+<xsd:enumeration value="Invoice_InvoiceBatchAlreadyExists"/>
+<xsd:enumeration value="Invoice_InvoiceBatchCouldNotBeCreated"/>
+<xsd:enumeration value="InvoiceMissingInvoice"/>
+<xsd:enumeration value="InvoiceMissingCreditorAccountCode"/>
+<xsd:enumeration value="InvoiceMissingDebtorCode"/>
+<xsd:enumeration value="InvoiceMissingDebtorName"/>
+<xsd:enumeration value="InvoiceMissingDebtorEmailAddress"/>
+<xsd:enumeration value="InvoiceMissingDebtorCountryCode"/>
+<xsd:enumeration value="InvoiceMissingInvoicePayment"/>
+<xsd:enumeration value="InvoiceMissingReference"/>
+<xsd:enumeration value="InvoiceInvalidCreditorAccount"/>
+<xsd:enumeration value="InvoiceInvalidDebtor"/>
+<xsd:enumeration value="InvoiceInvalidPaymentAmount"/>
+<xsd:enumeration value="InvoiceInvalidPaymentCurrency"/>
+<xsd:enumeration value="InvoiceInvalidDebtorType"/>
+<xsd:enumeration value="InvoiceDoesNotExists"/>
+<xsd:enumeration value="InvoiceDoesNotExistsForDebtor"/>
+<xsd:enumeration value="InvoicePaymentAmountToHigh"/>
+<xsd:enumeration value="InvoiceAlreadyPaid"/>
+<xsd:enumeration value="InvoiceErrorStoreDebtor"/>
+<xsd:enumeration value="InvoiceErrorStoreInvoice"/>
+<xsd:enumeration value="InvoiceErrorCheckInvoiceReference"/>
+<xsd:enumeration value="InvoiceErrorSearchInvoices"/>
+<xsd:enumeration value="InvoiceErrorNoInvoiceConfiguration"/>
+<xsd:enumeration value="InvoiceErrorInvalidInvoiceConfiguration"/>
+<xsd:enumeration value="RechargeContractNotFound"/>
+<xsd:enumeration value="RechargeTooManyPaymentDetails"/>
+<xsd:enumeration value="RechargeInvalidContract"/>
+<xsd:enumeration value="RechargeDetailNotFound"/>
+<xsd:enumeration value="RechargeFailedToDisable"/>
+<xsd:enumeration value="RechargeDetailNotAvailableForContract"/>
+<xsd:enumeration value="InvalidMerchantAccount"/>
+<xsd:enumeration value="RequestMissing"/>
+<xsd:enumeration value="InternalError"/>
+<xsd:enumeration value="UnableToProcess"/>
+<xsd:enumeration value="PaymentDetailsAreNotSupported"/>
+<xsd:enumeration value="InvalidAcquirerAccount"/>
+<xsd:enumeration value="InvalidConfigurationAuthorisationMid"/>
+<xsd:enumeration value="InvalidConfigurationAcquirerPassword"/>
+<xsd:enumeration value="InvalidConfigurationApiKey"/>
+<xsd:enumeration value="InvalidConfigurationRedirectUrl"/>
+<xsd:enumeration value="InvalidConfigurationAcquirerAccountData"/>
+<xsd:enumeration value="InvalidConfigurationCurrencyCode"/>
+</xsd:restriction>
+</xsd:simpleType>
+</xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="sendNotificationResponse">
+    <wsdl:part name="parameters" element="tns:sendNotificationResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ServiceException">
+    <wsdl:part name="ServiceException" element="tns:ServiceException">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="sendNotificationRequest">
+    <wsdl:part name="parameters" element="tns:sendNotification">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="NotificationPortType">
+    <wsdl:operation name="sendNotification">
+      <wsdl:input name="sendNotificationRequest" message="tns:sendNotificationRequest">
+    </wsdl:input>
+      <wsdl:output name="sendNotificationResponse" message="tns:sendNotificationResponse">
+    </wsdl:output>
+      <wsdl:fault name="ServiceException" message="tns:ServiceException">
+    </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="NotificationHttpBinding" type="tns:NotificationPortType">
+    <wsdlsoap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="sendNotification">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input name="sendNotificationRequest">
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="sendNotificationResponse">
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="ServiceException">
+        <wsdlsoap:fault name="ServiceException" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="Notification">
+    <wsdl:port name="NotificationHttpPort" binding="tns:NotificationHttpBinding">
+      <wsdlsoap:address location="https://ca-live.adyen.com/ca/services/Notification"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
