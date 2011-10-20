@@ -20,6 +20,7 @@ class AdyenService
 	public $currency;
 	public $entities = array();
 	public $webservice = array();
+	protected $updateChargeAmount = 2; // 2 cent for authorisation
 	protected $error;
 
 	/**
@@ -89,10 +90,10 @@ class AdyenService
 		else
 		{
 			/**
-			 * Set the paymentAmount to 50 cent and cancel it on a successful authorisation
+			 * Set the paymentAmount to 2 cent and cancel it on a successful authorisation
 			 */
 
-			$paymentAmount = 50;
+			$paymentAmount = $this->updateChargeAmount;
 
 			$transaction->setAmount($paymentAmount);
 		}
@@ -133,7 +134,7 @@ class AdyenService
 	 */
 	public function update(Account $account, $returnUrl)
 	{
-		$paymentAmount = 50;
+		$paymentAmount = $this->updateChargeAmount;
 
 		$transaction = new $this->entities['transaction'];
 		$transaction->setAccount($account);
@@ -495,10 +496,10 @@ class AdyenService
 
 		/**
 		 * There can be 2 different types of setupTransactions:
-		 *   1. 50 cent recurring authorisation
+		 *   1. 2 cent recurring authorisation
 		 *   2. Charge for the first month
 		 */
-		if($transaction->getAmount() == 50)
+		if($transaction->getAmount() == $this->updateChargeAmount)
 		{
 			/**
 			 * This is just a authorisation to get the recurringContract running
@@ -550,7 +551,7 @@ class AdyenService
 		$this->em->persist($account);
 
 		/**
-		 * Cancel this 50 cent transaction
+		 * Cancel this 2 cent transaction
 		 */
 		if(!$this->cancel($transaction))
 			$transaction->log('Cancel failed');
