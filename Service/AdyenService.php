@@ -492,6 +492,7 @@ class AdyenService
 		$account->setRecurringReference($notification['pspReference']);
 		$account->hasRecurringSetup(true);
 		$account->isExpired(false);
+		$account->isTrial(false);
 		$this->em->persist($account);
 
 		/**

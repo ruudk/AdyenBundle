@@ -42,7 +42,6 @@ abstract class Account
 	{
 		$this->hasChargePending(false);
 		$this->isExpired(false);
-		$this->isTrial(false);
 
 		$expiresAt = new \DateTime();
 		$this->setPlanExpiresAt($expiresAt->modify('+1 month'));
