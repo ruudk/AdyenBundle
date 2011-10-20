@@ -486,11 +486,6 @@ class AdyenService
 	{
 		$account = $transaction->getAccount();
 
-		/**
-		 * Set the new recurring reference
-		 */
-		$account->setRecurringReference($notification['pspReference']);
-		$account->hasRecurringSetup(true);
 		$account->isExpired(false);
 		$account->isTrial(false);
 		$this->em->persist($account);
@@ -505,7 +500,7 @@ class AdyenService
 			/**
 			 * This is just a authorisation to get the recurringContract running
 			 *
-			 * So we are just goign to cancel the transaction at Adyen
+			 * So we are just going to cancel the transaction at Adyen
 			 */
 			if(!$this->cancel($transaction))
 				$transaction->log('Cancel failed');
