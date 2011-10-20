@@ -241,7 +241,7 @@ class AdyenService
 				)
 			));
 
-			if($result->result && ($result->result->response == '[detail-successfully-disabled]' || $result->result->response == '[all-details-successfully-disabled]')
+			if($result->result && ($result->result->response == '[detail-successfully-disabled]' || $result->result->response == '[all-details-successfully-disabled]'))
 			{
 				if($recurringReference === null || $account->getRecurringReference() == $recurringReference)
 				{
