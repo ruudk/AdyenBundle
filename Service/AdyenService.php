@@ -475,6 +475,13 @@ class AdyenService
 					return false;
 				}
 			}
+			else
+			{
+				/**
+				 * When this transaction is already processed, just grab the latest contracts
+				 */
+				$this->loadContract($transaction->getAccount());
+			}
 
 			return true;
 		}
@@ -486,6 +493,7 @@ class AdyenService
 	{
 		$account = $transaction->getAccount();
 
+		$account->hasRecurringSetup(true);
 		$account->isExpired(false);
 		$account->isTrial(false);
 		$this->em->persist($account);
@@ -539,12 +547,6 @@ class AdyenService
 		 */
 		if(!$this->disable($account, $account->getRecurringReference()))
 			$transaction->log(sprintf('Disable old contract %s failed', $account->getRecurringReference()));
-
-		/**
-		 * Set the new recurring reference
-		 */
-		$account->setRecurringReference($notification['pspReference']);
-		$this->em->persist($account);
 
 		/**
 		 * Cancel this 2 cent transaction
