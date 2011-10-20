@@ -241,26 +241,29 @@ class AdyenService
 				)
 			));
 
-			if($result->result && $result->result->response == '[detail-successfully-disabled]')
-				return true;
-			elseif($result->result && $result->result->response == '[all-details-successfully-disabled]')
+			if($result->result && ($result->result->response == '[detail-successfully-disabled]' || $result->result->response == '[all-details-successfully-disabled]')
 			{
-				$account->setRecurringReference(null);
-				$account->hasRecurringSetup(false);
-				$account->setCardHolder(null);
-				$account->setCardNumber(null);
-				$account->setCardExpiryMonth(null);
-				$account->setCardExpiryYear(null);
+				if($recurringReference === null || $account->getRecurringReference() == $recurringReference)
+				{
+					$account->setRecurringReference(null);
+					$account->hasRecurringSetup(false);
+					$account->setCardHolder(null);
+					$account->setCardNumber(null);
+					$account->setCardExpiryMonth(null);
+					$account->setCardExpiryYear(null);
 
-				$this->em->persist($account);
-				$this->em->flush();
+					$this->em->persist($account);
+					$this->em->flush();
+				}
 
 				return true;
 			}
+			else
+			{
+				$this->error = print_r($result, true);
 
-			$this->error = print_r($result, true);
-
-			return false;
+				return false;
+			}
 		}
 		catch(\SoapFault $exception)
 		{
