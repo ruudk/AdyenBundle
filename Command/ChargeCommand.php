@@ -29,12 +29,31 @@ class ChargeCommand extends Command
 	{
 		$this->setName('adyen:charge');
 		$this->setDescription('Charge accounts that need to be renewed');
+		$this->setDefinition(array(
+		    new InputArgument(
+                'account',
+				InputArgument::OPTIONAL,
+				'The ID of the account you want to charge (optional)'
+            )
+		));
 	}
 
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		$expired = $this->em->getRepository($this->container->getParameter('adyen.account_entity'))->getAccountsThatNeedToBeCharged();
+		if($input->getArgument('account') !== null)
+		{
+			if($account = $this->em->getRepository($this->container->getParameter('adyen.account_entity'))->find($input->getArgument('account')))
+			{
+				$expired = array($account);
+			}
+			else return $output->writeln('<error>Account not found</error>');
+		}
+		else 
+		{
+			$expired = $this->em->getRepository($this->container->getParameter('adyen.account_entity'))->getAccountsThatNeedToBeCharged();
+		}
+		
 		if($expired)
 		{
 			$output->writeln("Charging " . (count($expired) == 1 ? "1 account" : count($expired) . " accounts"));
