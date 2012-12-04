@@ -1,0 +1,28 @@
+{
+    "name":        "sparkling/adyen-bundle",
+    "type":        "symfony-bundle",
+    "description": "This AdyenBundle for Symfony2 helps you with adding recurring billing to your application",
+    "keywords":    ["adyen", "billing", "recurring", "symfony2"],
+    "homepage":    "http://github.com/sparklingapp/AdyenBundle",
+    "license":     "MIT",
+
+    "authors": [
+        {
+            "name": "Ruud Kamphuis",
+            "email": "ruudk@mphuis.com"
+        }
+    ],
+
+    "require": {
+        "php": ">=5.3.2",
+        "symfony/framework-bundle": ">=2.0,<2.2-dev"
+    },
+
+    "autoload": {
+        "psr-0": {
+            "Sparkling\\AdyenBundle": ""
+        }
+    },
+
+    "target-dir": "Sparkling/AdyenBundle"
+}
