@@ -28,20 +28,20 @@ class ListContractCommand extends Command
 	protected function configure()
 	{
 		$this->setName('adyen:contract:list');
-		$this->setDescription('List contracts per account');
+		$this->setDescription('List contracts per subscription');
 		$this->setDefinition(array(new InputArgument(
-            'account',
+            'subscription',
 			InputArgument::REQUIRED,
-			'The ID of the account'
+			'The ID of the subscription'
         )));
 	}
 
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		if($account = $this->em->getRepository($this->container->getParameter('adyen.account_entity'))->find($input->getArgument('account')))
+		if($subscription = $this->em->getRepository($this->container->getParameter('adyen.subscription_entity'))->find($input->getArgument('subscription')))
 		{
-			if($contracts = $this->container->get('adyen.service')->getContracts($account))
+			if($contracts = $this->container->get('adyen.service')->getContracts($subscription))
 			{
 				$first = true;
 				foreach($contracts AS $contract)
@@ -61,6 +61,6 @@ class ListContractCommand extends Command
 			}
 			else $output->writeln('No contracts found');
 		}
-		else $output->writeln('Account not found');
+		else $output->writeln('Subscription not found');
 	}
 }

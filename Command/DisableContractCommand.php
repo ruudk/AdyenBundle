@@ -28,12 +28,12 @@ class DisableContractCommand extends Command
 	protected function configure()
 	{
 		$this->setName('adyen:contract:disable');
-		$this->setDescription('Disable contract(s) for account');
+		$this->setDescription('Disable contract(s) for subscription');
 		$this->setDefinition(array(
 		    new InputArgument(
-                'account',
+                'subscription',
 				InputArgument::REQUIRED,
-				'The ID of the account'
+				'The ID of the subscription'
             ),
 			new InputArgument(
                 'reference',
@@ -43,26 +43,27 @@ class DisableContractCommand extends Command
 		));
 	}
 
-
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		if($account = $this->em->getRepository($this->container->getParameter('adyen.account_entity'))->find($input->getArgument('account')))
+		if($subscription = $this->em->getRepository($this->container->getParameter('adyen.subscription_entity'))->find($input->getArgument('subscription')))
 		{
-			if($this->container->get('adyen.service')->disable($account, $input->getArgument('reference')))
+			if($this->container->get('adyen.service')->disable($subscription, $input->getArgument('reference')))
 			{
 				if($input->getArgument('reference') == null)
-					$output->writeln(sprintf('Disable all contracts for account %s <info>[ OK ]</info>', $input->getArgument('account')));
+					$output->writeln(sprintf('Disable all contracts for subscription %s <info>[ OK ]</info>', $input->getArgument('subscription')));
 				else
 					$output->writeln(sprintf('Disable contract %s <info>[ OK ]</info>', $input->getArgument('reference')));
 			}
 			else
 			{
 				if($input->getArgument('reference') == null)
-					$output->writeln(sprintf('Disable all contracts for account %s <error>[ Failed ]</error>', $input->getArgument('account')));
+					$output->writeln(sprintf('Disable all contracts for subscription %s <error>[ Failed ]</error>', $input->getArgument('subscription')));
 				else
 					$output->writeln(sprintf('Disable contract %s <error>[ Failed ]</error>', $input->getArgument('reference')));
 			}
 		}
-		else $output->writeln('<error>Account not found</error>');
+		else $output->writeln('<error>Subscription not found</error>');
+
+        $this->em->flush();
 	}
 }

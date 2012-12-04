@@ -2,7 +2,7 @@
 
 namespace Sparkling\AdyenBundle\Entity;
 
-abstract class Account
+abstract class Subscription
 {
     abstract public function getId();
 
@@ -14,6 +14,8 @@ abstract class Account
 	abstract public function hasChargePending($set = null);
 
 	abstract public function hasRecurringSetup($set = null);
+
+    abstract public function getEmail();
 
 	abstract public function getPlanExpiresAt();
 	abstract public function setPlanExpiresAt(\DateTime $plan_expires_at);
@@ -33,17 +35,20 @@ abstract class Account
 	abstract public function getCardExpiryYear();
 	abstract public function setCardExpiryYear($card_expiry_year);
 
-	abstract public function getPlan();
-	abstract public function setPlan(Plan $plan);
+    /**
+     * @return \Sparkling\AdyenBundle\Entity\Plan
+     */
+    abstract public function getPlan();
 
-	abstract public function getEmail();
+    /**
+     * @param Plan $plan
+     */
+    abstract public function setPlan(Plan $plan);
 
 	public function extendPlan()
 	{
 		$this->hasChargePending(false);
 		$this->isExpired(false);
-
-		$expiresAt = new \DateTime();
-		$this->setPlanExpiresAt($expiresAt->modify('+1 month'));
+		$this->setPlanExpiresAt(new \DateTime('+1 month'));
 	}
 }

@@ -16,24 +16,34 @@ class ChargeCommand extends Command
 	 * @var \Symfony\Component\DependencyInjection\ContainerInterface
 	 */
 	protected $container;
-	protected $em;
+
+    /**
+     * @var \Doctrine\ORM\EntityManager
+     */
+    protected $em;
+
+    /**
+     * @var \Sparkling\AdyenBundle\Service\AdyenService
+     */
+    protected $adyen;
 
 	protected function initialize(InputInterface $input, OutputInterface $output)
 	{
 		$this->container = $this->getApplication()->getKernel()->getContainer();
 
 		$this->em = $this->container->get('doctrine.orm.default_entity_manager');
+        $this->adyen = $this->container->get('adyen.service');
 	}
 
 	protected function configure()
 	{
 		$this->setName('adyen:charge');
-		$this->setDescription('Charge accounts that need to be renewed');
+		$this->setDescription('Charge subscriptions that need to be renewed');
 		$this->setDefinition(array(
 		    new InputArgument(
-                'account',
+                'subscription',
 				InputArgument::OPTIONAL,
-				'The ID of the account you want to charge (optional)'
+				'The ID of the subscription you want to charge (optional)'
             )
 		));
 	}
@@ -41,43 +51,56 @@ class ChargeCommand extends Command
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		if($input->getArgument('account') !== null)
+        /**
+         * @var \Sparkling\AdyenBundle\Entity\SubscriptionRepositoryInterface $repository
+         */
+        $repository = $this->em->getRepository($this->container->getParameter('adyen.subscription_entity'));
+
+		if($input->getArgument('subscription') !== null)
 		{
-			if($account = $this->em->getRepository($this->container->getParameter('adyen.account_entity'))->find($input->getArgument('account')))
+			if($subscription = $repository->find($input->getArgument('subscription')))
 			{
-				$expired = array($account);
+				$expired = array($subscription);
 			}
-			else return $output->writeln('<error>Account not found</error>');
+			else return $output->writeln('<error>Subscription not found</error>');
 		}
 		else 
 		{
-			$expired = $this->em->getRepository($this->container->getParameter('adyen.account_entity'))->getAccountsThatNeedToBeCharged();
+			$expired = $repository->getSubscriptionsThatNeedToBeCharged();
 		}
 		
 		if($expired)
 		{
-			$output->writeln("Charging " . (count($expired) == 1 ? "1 account" : count($expired) . " accounts"));
+			$output->writeln("Charging " . (count($expired) == 1 ? "1 subscription" : count($expired) . " subscriptions"));
 			$output->writeLn('');
 
-			foreach($expired AS $account)
+			foreach($expired AS $subscription)
 			{
-				if($account->getRecurringReference() === null)
+                if($subscription->getRecurringReference() === null)
 				{
-					if($this->container->get('adyen.service')->loadContract($account) !== true)
+					if($this->adyen->loadContract($subscription) !== true)
 					{
-						$output->writeln(sprintf('%s <error>%s</error>', $account->getName(), 'Recurring contract not found'));
+						$output->writeln(sprintf('Subscription %d <error>%s</error>', $subscription->getId(), 'Recurring contract not found'));
 						continue;
 					}
 				}
 
-				$charge = $this->container->get('adyen.service')->charge($account);
+				$transaction = $this->adyen->charge($subscription);
 
-				if($charge === false)
-					$output->writeln(sprintf('%s <error>%s</error>', $account->getName(), $this->container->get('adyen.service')->getError()));
+				if($transaction === FALSE)
+					$output->writeln(sprintf('Subscription %d <error>%s</error>', $subscription->getId(), $this->adyen->getError()));
 				else
-					$output->writeln(sprintf('%s <comment>%s</comment>', $account->getName(), 'Done'));
+                {
+					$output->writeln(sprintf(
+                        'Subscription %d -> Transaction %d [<info>OK</info>]',
+                        $subscription->getId(),
+                        $transaction->getId()
+                    ));
+                }
 			}
+
+            $this->em->flush();
 		}
-		else $output->writeln('There are accounts that need to be charged.');
+		else $output->writeln('There are subscriptions that need to be charged.');
 	}
 }

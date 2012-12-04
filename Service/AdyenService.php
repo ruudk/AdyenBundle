@@ -5,21 +5,22 @@ namespace Sparkling\AdyenBundle\Service;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Sparkling\AdyenBundle\Entity\Account;
+use Sparkling\AdyenBundle\Entity\Subscription;
 use Sparkling\AdyenBundle\Entity\Plan;
 use Sparkling\AdyenBundle\Entity\Transaction;
 use Sparkling\AdyenBundle\Event\ChargeEvent;
 use Sparkling\AdyenBundle\Event\PriceEvent;
+use Sparkling\AdyenBundle\Event\CurrencyEvent;
 
 class AdyenService
 {
-	public $platform;
-	public $merchantAccount;
-	public $skin;
-	public $sharedSecret;
-	public $currency;
-	public $entities = array();
-	public $webservice = array();
+    protected $platform;
+    protected $merchantAccount;
+    protected $skin;
+    protected $sharedSecret;
+    protected $currency;
+    protected $entities = array();
+    protected $webservice = array();
 	protected $updateChargeAmount = 2; // 2 cent for authorisation
 	protected $error;
 
@@ -59,24 +60,33 @@ class AdyenService
 	}
 
 	/**
-	 * @param Account $account
+	 * @param Subscription $subscription
 	 * @param Plan $plan
 	 * @param  $returnUrl
-	 * @return Symfony\Component\HttpFoundation\RedirectResponse
+	 * @return \Symfony\Component\HttpFoundation\RedirectResponse
 	 */
-	public function setup(Account $account, Plan $plan, $returnUrl)
+	public function setup(Subscription $subscription, Plan $plan, $returnUrl)
 	{
+        /**
+         * @var \Sparkling\AdyenBundle\Entity\Transaction $transaction
+         */
 		$transaction = new $this->entities['transaction'];
 
+        /**
+         * Fire up a CurrencyEvent to allow modification of the currency by developers
+         */
+        $currencyEvent = new CurrencyEvent($subscription, $plan, $this->currency);
+        $this->dispatcher->dispatch('adyen.currency', $currencyEvent);
+
 		$today = new \DateTime();
-		if($account->getPlanExpiresAt() <= $today)
+		if($subscription->getPlanExpiresAt() <= $today)
 		{
 			/**
 			 * When the plan is already expired we have to charge the first month directly
 			 *
 			 * Fire up a PriceEvent to allow modification of the price and tax by developers
 			 */
-			$priceEvent = new PriceEvent($account, $plan);
+			$priceEvent = new PriceEvent($subscription, $plan, $currencyEvent->getCurrency());
             $this->dispatcher->dispatch('adyen.price', $priceEvent);
 
 			$paymentAmount = $priceEvent->getCents($applyDiscount = true);
@@ -84,8 +94,8 @@ class AdyenService
 			$transaction->setAmount($priceEvent->getCents($applyDiscount = false));
 			$transaction->setDiscount($priceEvent->getDiscount());
 
-			$account->hasChargePending(true);
-			$this->em->persist($account);
+			$subscription->hasChargePending(true);
+			$this->em->persist($subscription);
 		}
 		else
 		{
@@ -98,9 +108,10 @@ class AdyenService
 			$transaction->setAmount($paymentAmount);
 		}
 
-		$transaction->setAccount($account);
+		$transaction->setSubscription($subscription);
+        $transaction->setPlan($plan);
 		$transaction->setType('setup');
-		$transaction->setCurrency($plan->getCurrency());
+        $transaction->setCurrency($currencyEvent->getCurrency());
 		$this->em->persist($transaction);
 
 		$this->em->flush();
@@ -109,13 +120,13 @@ class AdyenService
 		$parameters = array(
 			'merchantReference' => 'Setup ' . $transaction->getId(),
 			'paymentAmount'     => $paymentAmount,
-			'currencyCode'      => $plan->getCurrency(),
+			'currencyCode'      => $transaction->getCurrency(),
 			'shipBeforeDate'    => $today->format('Y-m-d'),
 			'skinCode'          => $this->skin,
 			'merchantAccount'   => $this->merchantAccount,
 			'sessionValidity'   => $today->modify('+3 hours')->format(DATE_ATOM),
-			'shopperEmail'      => $account->getEmail(),
-			'shopperReference'  => $account->getId(),
+			'shopperEmail'      => $subscription->getEmail(),
+			'shopperReference'  => $subscription->getId(),
 			'recurringContract' => 'RECURRING',
 			'resURL'            => $returnUrl,
 			'allowedMethods'    => 'mc,visa,amex',
@@ -128,19 +139,28 @@ class AdyenService
 	}
 
 	/**
-	 * @param Account $account
+	 * @param Subscription $subscription
 	 * @param  $returnUrl
-	 * @return Symfony\Component\HttpFoundation\RedirectResponse
+	 * @return \Symfony\Component\HttpFoundation\RedirectResponse
 	 */
-	public function update(Account $account, $returnUrl)
+	public function update(Subscription $subscription, $returnUrl)
 	{
 		$paymentAmount = $this->updateChargeAmount;
 
+        /**
+         * Fire up a CurrencyEvent to allow modification of the currency by developers
+         */
+        $currencyEvent = new CurrencyEvent($subscription, $subscription->getPlan(), $this->currency);
+        $this->dispatcher->dispatch('adyen.currency', $currencyEvent);
+
+        /**
+         * @var \Sparkling\AdyenBundle\Entity\Transaction $transaction
+         */
 		$transaction = new $this->entities['transaction'];
-		$transaction->setAccount($account);
+		$transaction->setSubscription($subscription);
 		$transaction->setType('update');
 		$transaction->setAmount($paymentAmount);
-		$transaction->setCurrency($account->getPlan()->getCurrency());
+		$transaction->setCurrency($currencyEvent->getCurrency());
 
 		$this->em->persist($transaction);
 		$this->em->flush();
@@ -149,13 +169,13 @@ class AdyenService
 		$parameters = array(
 			'merchantReference' => 'Update ' . $transaction->getId(),
 			'paymentAmount'     => $paymentAmount,
-			'currencyCode'      => $account->getPlan()->getCurrency(),
+			'currencyCode'      => $transaction->getCurrency(),
 			'shipBeforeDate'    => $today->format('Y-m-d'),
 			'skinCode'          => $this->skin,
 			'merchantAccount'   => $this->merchantAccount,
 			'sessionValidity'   => $today->modify('+3 hours')->format(DATE_ATOM),
-			'shopperEmail'      => $account->getEmail(),
-			'shopperReference'  => $account->getId(),
+			'shopperEmail'      => $subscription->getEmail(),
+			'shopperReference'  => $subscription->getId(),
 			'recurringContract' => 'RECURRING',
 			'resURL'            => $returnUrl,
 			'allowedMethods'    => 'mc,visa,amex',
@@ -226,7 +246,7 @@ class AdyenService
 		return false;
 	}
 
-	public function disable(Account $account, $recurringReference = null)
+	public function disable(Subscription $subscription, $recurringReference = null)
 	{
 		$this->error = null;
 
@@ -236,23 +256,23 @@ class AdyenService
 			$result = $client->disable(array(
 				'request' => array(
 					'merchantAccount'           => $this->merchantAccount,
-					'shopperReference'          => $account->getId(),
+					'shopperReference'          => $subscription->getId(),
 					'recurringDetailReference'  => $recurringReference
 				)
 			));
 
 			if($result->result && ($result->result->response == '[detail-successfully-disabled]' || $result->result->response == '[all-details-successfully-disabled]'))
 			{
-				if($recurringReference === null || $account->getRecurringReference() == $recurringReference)
+				if($recurringReference === null || $subscription->getRecurringReference() == $recurringReference)
 				{
-					$account->setRecurringReference(null);
-					$account->hasRecurringSetup(false);
-					$account->setCardHolder(null);
-					$account->setCardNumber(null);
-					$account->setCardExpiryMonth(null);
-					$account->setCardExpiryYear(null);
+					$subscription->setRecurringReference(null);
+					$subscription->hasRecurringSetup(false);
+					$subscription->setCardHolder(null);
+					$subscription->setCardNumber(null);
+					$subscription->setCardExpiryMonth(null);
+					$subscription->setCardExpiryYear(null);
 
-					$this->em->persist($account);
+					$this->em->persist($subscription);
 					$this->em->flush();
 				}
 
@@ -273,32 +293,46 @@ class AdyenService
 		}
 	}
 
-	public function charge(Account $account)
+    /**
+     * @param \Sparkling\AdyenBundle\Entity\Subscription $subscription
+     * @return bool|\Sparkling\AdyenBundle\Entity\Transaction
+     */
+    public function charge(Subscription $subscription)
 	{
 		$this->error = null;
+
+        /**
+         * Fire up a CurrencyEvent to allow modification of the currency by developers
+         */
+        $currencyEvent = new CurrencyEvent($subscription, $subscription->getPlan(), $this->currency);
+        $this->dispatcher->dispatch('adyen.currency', $currencyEvent);
 
 		$client = $this->getSoapClient('Payment');
 		try
 		{
-			$plan = $account->getPlan();
+			$plan = $subscription->getPlan();
 
 			/**
 			 * Fire up a PriceEvent to allow modification of the price and tax by developers
 			 */
-			$priceEvent = new PriceEvent($account, $plan);
+			$priceEvent = new PriceEvent($subscription, $plan, $currencyEvent->getCurrency());
             $this->dispatcher->dispatch('adyen.price', $priceEvent);
 
+            /**
+             * @var \Sparkling\AdyenBundle\Entity\Transaction $transaction
+             */
 			$transaction = new $this->entities['transaction'];
-			$transaction->setAccount($account);
+			$transaction->setSubscription($subscription);
 			$transaction->setType('recurring');
-			$transaction->setAmount($priceEvent->getCents($applyDiscount = false));
-			$transaction->setDiscount($priceEvent->getdiscount());
-			$transaction->setCurrency($plan->getCurrency());
+			$transaction->setAmount($priceEvent->getPrice());
+            $transaction->setTax($priceEvent->getTax());
+			$transaction->setDiscount($priceEvent->getDiscount());
+			$transaction->setCurrency($priceEvent->getCurrency());
 
 			$this->em->persist($transaction);
 
-			$account->hasChargePending(true);
-			$this->em->persist($account);
+			$subscription->hasChargePending(true);
+			$this->em->persist($subscription);
 
 			$this->em->flush();
 
@@ -315,7 +349,7 @@ class AdyenService
 
 				$this->em->flush();
 
-				return true;
+				return $transaction;
 			}
 			else
 			{
@@ -324,18 +358,18 @@ class AdyenService
 				 */
 				$result = $client->authorise(array(
 					'paymentRequest' => array(
-						'selectedRecurringDetailReference' => $account->getRecurringReference(),
+						'selectedRecurringDetailReference' => $subscription->getRecurringReference(),
 						'recurring' => array(
 							'contract' => 'RECURRING'
 						),
 						"amount" => array(
 							"value" => $priceEvent->getCents($applyDiscount = true),
-							"currency" => $plan->getCurrency()
+							"currency" => $priceEvent->getCurrency()
 						),
 						'merchantAccount' => $this->merchantAccount,
 						'reference' => 'Recurring ' . $transaction->getId(),
-						'shopperEmail' => $account->getEmail(),
-						'shopperReference' => $account->getId(),
+						'shopperEmail' => $subscription->getEmail(),
+						'shopperReference' => $subscription->getId(),
 						'shopperInteraction' => 'ContAuth',
 					)
 				));
@@ -348,17 +382,20 @@ class AdyenService
 
 				$this->em->flush();
 
-				return true;
+				return $transaction;
 			}
 		}
 		catch(\SoapFault $exception)
 		{
 			$this->error = $exception->getMessage();
 
-			$account->hasChargePending(false);
-			$this->em->persist($account);
+			$subscription->hasChargePending(false);
+			$this->em->persist($subscription);
 
-			$transaction->log($exception->getMessage());
+            /**
+             * @todo This is weird.... What if the transaction is not yet created??
+             */
+            $transaction->log($exception->getMessage());
 			$transaction->log($client->__getLastRequest());
 			$transaction->log($client->__getLastResponse());
 			$this->em->persist($transaction);
@@ -369,7 +406,7 @@ class AdyenService
 		}
 	}
 
-	public function getContracts(Account $account)
+	public function getContracts(Subscription $subscription)
 	{
 		$this->error = null;
 		
@@ -379,7 +416,7 @@ class AdyenService
 			$result = $client->listRecurringDetails(array(
 				'request' => array(
 					'merchantAccount'   => $this->merchantAccount,
-					'shopperReference'  => $account->getId(),
+					'shopperReference'  => $subscription->getId(),
 					'recurring' => array(
 						'contract' => 'RECURRING'
 					)
@@ -416,20 +453,20 @@ class AdyenService
 		}
 	}
 
-	public function loadContract(Account $account)
+	public function loadContract(Subscription $subscription)
 	{
-		if($contracts = $this->getContracts($account))
+		if($contracts = $this->getContracts($subscription))
 		{
 			$firstContract = array_shift($contracts);
 
-			$account->setRecurringReference($firstContract['recurringDetailReference']);
-			$account->hasRecurringSetup(true);
-			$account->setCardHolder($firstContract['card']['holderName']);
-			$account->setCardNumber($firstContract['card']['number']);
-			$account->setCardExpiryMonth($firstContract['card']['expiryMonth']);
-			$account->setCardExpiryYear($firstContract['card']['expiryYear']);
+			$subscription->setRecurringReference($firstContract['recurringDetailReference']);
+			$subscription->hasRecurringSetup(true);
+			$subscription->setCardHolder($firstContract['card']['holderName']);
+			$subscription->setCardNumber($firstContract['card']['number']);
+			$subscription->setCardExpiryMonth($firstContract['card']['expiryMonth']);
+			$subscription->setCardExpiryYear($firstContract['card']['expiryYear']);
 
-			$this->em->persist($account);
+			$this->em->persist($subscription);
 			$this->em->flush();
 
 			return true;
@@ -483,7 +520,7 @@ class AdyenService
 				/**
 				 * When this transaction is already processed, just grab the latest contracts
 				 */
-				$this->loadContract($transaction->getAccount());
+				$this->loadContract($transaction->getSubscription());
 			}
 
 			return true;
@@ -494,12 +531,18 @@ class AdyenService
 
 	protected function processSetupNotification(array $notification, Transaction $transaction)
 	{
-		$account = $transaction->getAccount();
+		$subscription = $transaction->getSubscription();
 
-		$account->hasRecurringSetup(true);
-		$account->isExpired(false);
-		$account->isTrial(false);
-		$this->em->persist($account);
+		$subscription->hasRecurringSetup(true);
+		$subscription->isExpired(false);
+		$subscription->isTrial(false);
+
+        if($transaction->getPlan() !== null)
+        {
+            $subscription->setPlan($transaction->getPlan());
+        }
+
+		$this->em->persist($subscription);
 
 		/**
 		 * There can be 2 different types of setupTransactions:
@@ -521,7 +564,7 @@ class AdyenService
 			/**
 			 * This is the payment for the first month
 			 */
-			$account->extendPlan();
+			$subscription->extendPlan();
 
 			/**
 			 * Fire a charge event
@@ -532,7 +575,7 @@ class AdyenService
 		/**
 		 * Load the new contract
 		 */
-		$this->loadContract($account);
+		$this->loadContract($subscription);
 
 		/**
 		 * Log errors
@@ -543,13 +586,13 @@ class AdyenService
 
 	protected function processUpdateNotification(array $notification, Transaction $transaction)
 	{
-		$account = $transaction->getAccount();
+		$subscription = $transaction->getSubscription();
 
 		/**
 		 * Destroy the previous recurring contract
 		 */
-		if(!$this->disable($account, $account->getRecurringReference()))
-			$transaction->log(sprintf('Disable old contract %s failed', $account->getRecurringReference()));
+		if(!$this->disable($subscription, $subscription->getRecurringReference()))
+			$transaction->log(sprintf('Disable old contract %s failed', $subscription->getRecurringReference()));
 
 		/**
 		 * Cancel this 2 cent transaction
@@ -560,7 +603,7 @@ class AdyenService
 		/**
 		 * Load the new contract
 		 */
-		$this->loadContract($account);
+		$this->loadContract($subscription);
 
 		/**
 		 * Log errors
@@ -571,11 +614,11 @@ class AdyenService
 
 	protected function processRecurringNotification(array $notification, Transaction $transaction)
 	{
-		$account = $transaction->getAccount();
+		$subscription = $transaction->getSubscription();
 
-		$account->extendPlan();
+		$subscription->extendPlan();
 
-		$this->em->persist($account);
+		$this->em->persist($subscription);
 	}
 
 	/**

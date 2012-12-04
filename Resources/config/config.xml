@@ -7,9 +7,9 @@
 	<parameters>
 		<parameter key="adyen.service.class">Sparkling\AdyenBundle\Service\AdyenService</parameter>
 		<parameter key="adyen.notification.class">Sparkling\AdyenBundle\Service\NotificationService</parameter>
-		<parameter key="adyen.account_entity"></parameter>
-		<parameter key="adyen.plan_entity"></parameter>
-		<parameter key="adyen.transaction_entity"></parameter>
+		<parameter key="adyen.subscription_entity"/>
+		<parameter key="adyen.plan_entity"/>
+        <parameter key="adyen.transaction_entity"/>
 	</parameters>
 
 	<services>
@@ -20,7 +20,7 @@
 			<argument>%adyen.shared_secret%</argument>
 			<argument>%adyen.currency%</argument>
 			<argument type="collection">
-				<argument key="account">%adyen.account_entity%</argument>
+				<argument key="subscription">%adyen.subscription_entity%</argument>
 				<argument key="plan">%adyen.plan_entity%</argument>
 				<argument key="transaction">%adyen.transaction_entity%</argument>
 		    </argument>

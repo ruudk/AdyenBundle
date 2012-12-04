@@ -29,7 +29,7 @@ class Configuration
 				->scalarNode('skin')->isRequired()->end()
 				->scalarNode('shared_secret')->isRequired()->end()
 				->scalarNode('currency')->defaultValue('USD')->end()
-				->scalarNode('account_entity')->isRequired()->end()
+				->scalarNode('subscription_entity')->isRequired()->end()
 				->scalarNode('plan_entity')->isRequired()->end()
 				->scalarNode('transaction_entity')->isRequired()->end()
 				->scalarNode('webservice_username')->isRequired()->end()
