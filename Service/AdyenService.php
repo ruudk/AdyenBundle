@@ -91,7 +91,7 @@ class AdyenService
 
 			$paymentAmount = $priceEvent->getCents($applyDiscount = true);
 
-			$transaction->setAmount($priceEvent->getCents($applyDiscount = false));
+			$transaction->setAmount($paymentAmount);
 			$transaction->setDiscount($priceEvent->getDiscount());
 
 			$subscription->hasChargePending(true);
@@ -248,6 +248,7 @@ class AdyenService
 
 	public function disable(Subscription $subscription, $recurringReference = null)
 	{
+        $remove = false;
 		$this->error = null;
 
 		$client = $this->getSoapClient('Recurring');
@@ -265,15 +266,7 @@ class AdyenService
 			{
 				if($recurringReference === null || $subscription->getRecurringReference() == $recurringReference)
 				{
-					$subscription->setRecurringReference(null);
-					$subscription->hasRecurringSetup(false);
-					$subscription->setCardHolder(null);
-					$subscription->setCardNumber(null);
-					$subscription->setCardExpiryMonth(null);
-					$subscription->setCardExpiryYear(null);
-
-					$this->em->persist($subscription);
-					$this->em->flush();
+					$remove = true;
 				}
 
 				return true;
@@ -287,10 +280,30 @@ class AdyenService
 		}
 		catch(\SoapFault $exception)
 		{
-			$this->error = $exception->getMessage();
+            if($exception->getMessage() !== "validation 800 Contract not found")
+            {
+                $this->error = $exception->getMessage();
 
-			return false;
+                return false;
+            }
+            else
+            {
+                $remove = true;
+            }
 		}
+
+        if($remove === true)
+        {
+            $subscription->setRecurringReference(null);
+            $subscription->hasRecurringSetup(false);
+            $subscription->setCardHolder(null);
+            $subscription->setCardNumber(null);
+            $subscription->setCardExpiryMonth(null);
+            $subscription->setCardExpiryYear(null);
+
+            $this->em->persist($subscription);
+            $this->em->flush();
+        }
 	}
 
     /**
@@ -323,8 +336,9 @@ class AdyenService
              */
 			$transaction = new $this->entities['transaction'];
 			$transaction->setSubscription($subscription);
+            $transaction->setPlan($subscription->getPlan());
 			$transaction->setType('recurring');
-			$transaction->setAmount($priceEvent->getPrice());
+			$transaction->setAmount($priceEvent->getCents());
             $transaction->setTax($priceEvent->getTax());
 			$transaction->setDiscount($priceEvent->getDiscount());
 			$transaction->setCurrency($priceEvent->getCurrency());
