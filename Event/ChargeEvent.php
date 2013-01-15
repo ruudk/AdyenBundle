@@ -22,24 +22,24 @@ class ChargeEvent extends Event
      * @param bool                                      $success
      */
     public function __construct(Transaction $transaction, $success)
-	{
-		$this->transaction = $transaction;
-		$this->success = (bool) $success;
-	}
+    {
+        $this->transaction = $transaction;
+        $this->success = (bool) $success;
+    }
 
     /**
      * @return \Sparkling\AdyenBundle\Entity\Transaction
      */
     public function getTransaction()
-	{
-		return $this->transaction;
-	}
+    {
+        return $this->transaction;
+    }
 
     /**
      * @return bool
      */
     public function isSucces()
-	{
-		return $this->success;
-	}
+    {
+        return $this->success;
+    }
 }

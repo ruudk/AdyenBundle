@@ -28,8 +28,8 @@ class CurrencyEvent extends Event
 
     /**
      * @param \Sparkling\AdyenBundle\Entity\Subscription $subscription
-     * @param \Sparkling\AdyenBundle\Entity\Plan    $plan
-     * @param string                                $defaultCurrency
+     * @param \Sparkling\AdyenBundle\Entity\Plan         $plan
+     * @param string                                     $defaultCurrency
      */
     public function __construct(Subscription $subscription, Plan $plan, $defaultCurrency)
     {

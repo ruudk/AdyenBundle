@@ -10,7 +10,7 @@ interface SubscriptionRepositoryInterface
     public function getSubscriptionsThatNeedToBeCharged();
 
     /**
-     * @param int $days
+     * @param  int                                                $days
      * @return array|\Sparkling\AdyenBundle\Entity\Subscription[]
      */
     public function getTrialSubscriptionsThatExpireIn($days);

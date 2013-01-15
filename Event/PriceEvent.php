@@ -42,33 +42,33 @@ class PriceEvent extends Event
 
     /**
      * @param \Sparkling\AdyenBundle\Entity\Subscription $subscription
-     * @param \Sparkling\AdyenBundle\Entity\Plan    $plan
-     * @param string                                $currency
+     * @param \Sparkling\AdyenBundle\Entity\Plan         $plan
+     * @param string                                     $currency
      */
     public function __construct(Subscription $subscription, Plan $plan, $currency)
-	{
-		$this->subscription = $subscription;
-		$this->plan = $plan;
+    {
+        $this->subscription = $subscription;
+        $this->plan = $plan;
         $this->currency = $currency;
-		$this->price = $plan->getPrice();
-		$this->tax = $plan->getTax();
-	}
+        $this->price = $plan->getPrice();
+        $this->tax = $plan->getTax();
+    }
 
     /**
      * @return \Sparkling\AdyenBundle\Entity\Subscription
      */
     public function getSubscription()
-	{
-		return $this->subscription;
-	}
+    {
+        return $this->subscription;
+    }
 
     /**
      * @return \Sparkling\AdyenBundle\Entity\Plan
      */
     public function getPlan()
-	{
-		return $this->plan;
-	}
+    {
+        return $this->plan;
+    }
 
     /**
      * @return string
@@ -82,64 +82,64 @@ class PriceEvent extends Event
      * @return float
      */
     public function getPrice()
-	{
-		return $this->price;
-	}
+    {
+        return $this->price;
+    }
 
     /**
      * @param float $price
      */
     public function setPrice($price)
-	{
-		$this->price = $price;
-	}
+    {
+        $this->price = $price;
+    }
 
     /**
      * @return float
      */
     public function getTax()
-	{
-		return $this->tax;
-	}
+    {
+        return $this->tax;
+    }
 
     /**
      * @param float $tax
      */
     public function setTax($tax)
-	{
-		$this->tax = $tax;
-	}
-
-	/**
-	 * @return float
-	 */
-	public function getDiscount()
-	{
-		return $this->discount;
-	}
-
-	/**
-	 * @param float
-	 */
-    public function setDiscount($discount)
-	{
-		$this->discount = $discount;
-	}
+    {
+        $this->tax = $tax;
+    }
 
     /**
-     * @param bool $applyDiscount
+     * @return float
+     */
+    public function getDiscount()
+    {
+        return $this->discount;
+    }
+
+    /**
+     * @param float
+     */
+    public function setDiscount($discount)
+    {
+        $this->discount = $discount;
+    }
+
+    /**
+     * @param  bool  $applyDiscount
      * @return float
      */
     public function getCents($applyDiscount = true)
-	{
-		$price = $this->price;
+    {
+        $price = $this->price;
 
-		if($applyDiscount && isset($this->discount))
-			$price -= $price * ($this->discount / 100);
+        if($applyDiscount && isset($this->discount))
+            $price -= $price * ($this->discount / 100);
 
-		if(isset($this->tax) && $this->tax > 0)
-			$price *= 1 + ($this->tax / 100);
+        if(isset($this->tax) && $this->tax > 0)
+            $price *= 1 + ($this->tax / 100);
 
-		return round($price * 100, 0);
-	}
+        return round($price * 100, 0);
+    }
 }
