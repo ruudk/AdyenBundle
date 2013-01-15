@@ -21,7 +21,7 @@ class AdyenService
     protected $currency;
     protected $entities = array();
     protected $webservice = array();
-    protected $updateChargeAmount = 2; // 2 cent for authorisation
+    protected $updateChargeAmount; // 2 cent for authorisation
     protected $error;
 
     /**
@@ -34,7 +34,7 @@ class AdyenService
      */
     protected $em;
 
-    public function __construct($platform, $merchantAccount, $skin, $sharedSecret, $currency, array $entities, array $webservice)
+    public function __construct($platform, $merchantAccount, $skin, $sharedSecret, $currency, array $entities, array $webservice, $updateChargeAmount)
     {
         $this->platform = $platform;
         $this->merchantAccount = $merchantAccount;
@@ -43,6 +43,7 @@ class AdyenService
         $this->currency = $currency;
         $this->entities = $entities;
         $this->webservice = $webservice;
+        $this->updateChargeAmount = $updateChargeAmount;
     }
 
     /**

@@ -10,6 +10,7 @@
 		<parameter key="adyen.subscription_entity"/>
 		<parameter key="adyen.plan_entity"/>
         <parameter key="adyen.transaction_entity"/>
+        <parameter key="adyen.update_charge_amount"/>
 	</parameters>
 
 	<services>
@@ -28,6 +29,7 @@
 				<argument key="username">%adyen.webservice_username%</argument>
 				<argument key="password">%adyen.webservice_password%</argument>
 		    </argument>
+            <argument>%adyen.update_charge_amount%</argument>
 			<call method="setEventDispatcher">
 				 <argument type="service" id="event_dispatcher" />
 			</call>

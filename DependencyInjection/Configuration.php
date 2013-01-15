@@ -28,6 +28,7 @@ class Configuration
                 ->scalarNode('skin')->isRequired()->end()
                 ->scalarNode('shared_secret')->isRequired()->end()
                 ->scalarNode('currency')->defaultValue('USD')->end()
+                ->scalarNode('update_charge_amount')->defaultValue('2')->end()
                 ->scalarNode('subscription_entity')->isRequired()->end()
                 ->scalarNode('plan_entity')->isRequired()->end()
                 ->scalarNode('transaction_entity')->isRequired()->end()

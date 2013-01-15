@@ -32,6 +32,7 @@ class SparklingAdyenExtension extends Extension
         $container->setParameter('adyen.merchant_account', $config['merchant_account']);
         $container->setParameter('adyen.shared_secret', $config['shared_secret']);
         $container->setParameter('adyen.currency', $config['currency']);
+        $container->setParameter('adyen.update_charge_amount', $config['update_charge_amount']);
         $container->setParameter('adyen.subscription_entity', $config['subscription_entity']);
         $container->setParameter('adyen.plan_entity', $config['plan_entity']);
         $container->setParameter('adyen.transaction_entity', $config['transaction_entity']);
