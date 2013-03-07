@@ -229,7 +229,6 @@ class AdyenService
         $this->error = null;
 
         if($transaction->isCancelled())
-
             return true;
 
         $result = $this->modification('cancel', array(
@@ -539,7 +538,7 @@ class AdyenService
     {
         $subscription = $transaction->getSubscription();
 
-        $subscription->hasRecurringSetup(true);
+        //$subscription->hasRecurringSetup(true); -> Happens in loadContract
         $subscription->isExpired(false);
         $subscription->isTrial(false);
 
