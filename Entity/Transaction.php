@@ -46,6 +46,7 @@ abstract class Transaction
 
     abstract public function isProcessed($set = null);
     abstract public function isCancelled($set = null);
+    abstract public function isSuccess($set = null);
 
     abstract public function getLog();
     abstract public function log($message);

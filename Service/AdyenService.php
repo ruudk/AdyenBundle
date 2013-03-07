@@ -11,6 +11,8 @@ use Sparkling\AdyenBundle\Entity\Transaction;
 use Sparkling\AdyenBundle\Event\ChargeEvent;
 use Sparkling\AdyenBundle\Event\PriceEvent;
 use Sparkling\AdyenBundle\Event\CurrencyEvent;
+use Sparkling\AdyenBundle\Event\CardInfoEvent;
+use Sparkling\AdyenBundle\Event\SetupEvent;
 
 class AdyenService
 {
@@ -22,6 +24,10 @@ class AdyenService
     protected $entities = array();
     protected $webservice = array();
     protected $updateChargeAmount; // 2 cent for authorisation
+
+    /**
+     * @var string
+     */
     protected $error;
 
     /**
@@ -259,9 +265,9 @@ class AdyenService
             if ($result->result && ($result->result->response == '[detail-successfully-disabled]' || $result->result->response == '[all-details-successfully-disabled]')) {
                 if ($recurringReference === null || $subscription->getRecurringReference() == $recurringReference) {
                     $remove = true;
+                } else {
+                    return true;
                 }
-
-                return true;
             } else {
                 $this->error = print_r($result, true);
 
@@ -368,11 +374,10 @@ class AdyenService
                     )
                 ));
 
-                $chargeEvent = new ChargeEvent(
+                $this->dispatcher->dispatch('adyen.charge', new ChargeEvent(
                     $transaction,
                     $result->paymentResult->resultCode == 'Authorised'
-                );
-                $this->dispatcher->dispatch('adyen.charge', $chargeEvent);
+                ));
 
                 $this->em->flush();
 
@@ -398,6 +403,10 @@ class AdyenService
         }
     }
 
+    /**
+     * @param \Sparkling\AdyenBundle\Entity\Subscription $subscription
+     * @return array|bool
+     */
     public function getContracts(Subscription $subscription)
     {
         $this->error = null;
@@ -440,6 +449,10 @@ class AdyenService
         }
     }
 
+    /**
+     * @param \Sparkling\AdyenBundle\Entity\Subscription $subscription
+     * @return bool
+     */
     public function loadContract(Subscription $subscription)
     {
         if ($contracts = $this->getContracts($subscription)) {
@@ -455,21 +468,30 @@ class AdyenService
             $this->em->persist($subscription);
             $this->em->flush();
 
+            $this->dispatcher->dispatch('adyen.card_info', new CardInfoEvent($subscription, $contracts));
+
             return true;
         }
 
         return false;
     }
 
+    /**
+     * @param array $notification
+     * @return bool
+     */
     public function processNotification(array $notification)
     {
         $merchantReference = preg_replace('/[^0-9]/Uis', '', $notification['merchantReference']);
+        /**
+         * @var \Sparkling\AdyenBundle\Entity\Transaction $transaction
+         */
         if ($transaction = $this->em->getRepository($this->entities['transaction'])->find($merchantReference)) {
             if ($transaction->isProcessed() == false) {
                 $transaction->isProcessed(true);
                 $transaction->setReference($notification['pspReference']);
 
-                if ($notification['authResult'] == "AUTHORISED" || $notification['authResult'] == "AUTHORISATION") {
+                if ($notification['success'] === TRUE && $notification['eventCode'] == "AUTHORISATION") {
                     switch ($transaction->getType()) {
                         case "setup":
                             $this->processSetupNotification($notification, $transaction);
@@ -484,10 +506,12 @@ class AdyenService
                             break;
                     }
 
+                    $transaction->isSuccess(true);
+
                     $this->em->persist($transaction);
                     $this->em->flush();
                 } else {
-                    $transaction->log("Failure: " . $notification['authResult']);
+                    $transaction->log("Failure: " . json_encode($notification));
 
                     $this->em->persist($transaction);
                     $this->em->flush();
@@ -507,6 +531,10 @@ class AdyenService
         return false;
     }
 
+    /**
+     * @param array $notification
+     * @param \Sparkling\AdyenBundle\Entity\Transaction $transaction
+     */
     protected function processSetupNotification(array $notification, Transaction $transaction)
     {
         $subscription = $transaction->getSubscription();
@@ -532,8 +560,9 @@ class AdyenService
              *
              * So we are just going to cancel the transaction at Adyen
              */
-            if(!$this->cancel($transaction))
+            if(FALSE === $this->cancel($transaction)) {
                 $transaction->log('Cancel failed');
+            }
         } else {
             /**
              * This is the payment for the first month
@@ -556,8 +585,17 @@ class AdyenService
          */
         $transaction->log($this->getError());
         $this->em->persist($transaction);
+
+        /**
+         * Fire a charge event
+         */
+        $this->dispatcher->dispatch('adyen.setup', new SetupEvent($transaction));
     }
 
+    /**
+     * @param array $notification
+     * @param \Sparkling\AdyenBundle\Entity\Transaction $transaction
+     */
     protected function processUpdateNotification(array $notification, Transaction $transaction)
     {
         $subscription = $transaction->getSubscription();
@@ -599,7 +637,7 @@ class AdyenService
      * @param  \Symfony\Component\HttpFoundation\Request $request
      * @return bool
      */
-    public function verifyAndProcessNotification(Request $request)
+    public function verifyNotification(Request $request)
     {
         if($request->query->has('merchantReference') && $request->query->has('skinCode')
         && $request->query->has('shopperLocale') && $request->query->has('paymentMethod')
@@ -613,21 +651,25 @@ class AdyenService
                 'authResult'        => $request->query->get('authResult'),
                 'pspReference'      => $request->query->get('pspReference')
             );
-            $expectedSignature = $this->signature($parameters);
 
-            if($request->query->get('merchantSig') == $expectedSignature)
-
-                return $this->processNotification($parameters);
+            return $expectedSignature = $this->signature($parameters);
         }
 
         return false;
     }
 
+    /**
+     * @return string
+     */
     public function getError()
     {
         return $this->error;
     }
 
+    /**
+     * @param array $parameters
+     * @return string
+     */
     protected function signature(array $parameters)
     {
         $hmac = array();
@@ -644,6 +686,10 @@ class AdyenService
         return base64_encode(hash_hmac('sha1', implode($hmac), $this->sharedSecret, true));
     }
 
+    /**
+     * @param $d
+     * @return array
+     */
     protected function toArray($d)
     {
         if (is_object($d)) {

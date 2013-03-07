@@ -4,6 +4,7 @@ namespace Sparkling\AdyenBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
+use SoapServer;
 
 class NotificationController extends Controller
 {
@@ -11,7 +12,7 @@ class NotificationController extends Controller
     {
         ini_set("soap.wsdl_cache_enabled", "0");
 
-        $server = new \SoapServer(__DIR__.'/../Resources/wsdl/test/Notification.wsdl');
+        $server = new SoapServer(__DIR__.'/../Resources/wsdl/test/Notification.wsdl');
         $server->setObject($this->get('adyen.notification'));
 
         $response = new Response();
@@ -23,7 +24,9 @@ class NotificationController extends Controller
         if ($content) {
             $response->headers->set('Content-Type', 'text/xml; charset=ISO-8859-1');
             $response->setContent($content);
-        } else $response->setContent("Adyen SOAP Notification server");
+        } else {
+            $response->setContent("Adyen SOAP Notification server");
+        }
 
         return $response;
     }

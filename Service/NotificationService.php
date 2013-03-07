@@ -53,7 +53,8 @@ class NotificationService
             'pspReference'      => $item->pspReference,
             'paymentMethod'     => $item->paymentMethod,
             'reason'            => $item->reason,
-            'authResult'        => $item->eventCode ?: $item->authResult
+            'success'           => $item->success,
+            'eventCode'         => $item->eventCode
         ));
 
         file_put_contents($this->logDirectory . '/adyen.log', $output, FILE_APPEND);
