@@ -651,7 +651,9 @@ class AdyenService
                 'pspReference'      => $request->query->get('pspReference')
             );
 
-            return $expectedSignature = $this->signature($parameters);
+            $expectedSignature = $request->query->get('merchantSig');
+
+            return $expectedSignature == $this->signature($parameters);
         }
 
         return false;
