@@ -30,6 +30,7 @@
 				<argument key="password">%adyen.webservice_password%</argument>
 		    </argument>
             <argument>%adyen.update_charge_amount%</argument>
+            <argument>%adyen.payment_methods%</argument>
 			<call method="setEventDispatcher">
 				 <argument type="service" id="event_dispatcher" />
 			</call>
