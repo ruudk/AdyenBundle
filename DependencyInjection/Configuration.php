@@ -34,6 +34,7 @@ class Configuration
                 ->scalarNode('transaction_entity')->isRequired()->end()
                 ->scalarNode('webservice_username')->isRequired()->end()
                 ->scalarNode('webservice_password')->isRequired()->end()
+                ->scalarNode('payment_methods')->defaultValue('mc,visa,amex')->end()
             ->end();
 
         return $treeBuilder->buildTree();

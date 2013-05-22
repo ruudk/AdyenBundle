@@ -38,6 +38,7 @@ class SparklingAdyenExtension extends Extension
         $container->setParameter('adyen.transaction_entity', $config['transaction_entity']);
         $container->setParameter('adyen.webservice_username', $config['webservice_username']);
         $container->setParameter('adyen.webservice_password', $config['webservice_password']);
+        $container->setParameter('adyen.payment_methods', $config['payment_methods']);
     }
 
     public function getXsdValidationBasePath()

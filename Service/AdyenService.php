@@ -24,6 +24,7 @@ class AdyenService
     protected $entities = array();
     protected $webservice = array();
     protected $updateChargeAmount; // 2 cent for authorisation
+    protected $paymentMethods;
 
     /**
      * @var string
@@ -40,7 +41,7 @@ class AdyenService
      */
     protected $em;
 
-    public function __construct($platform, $merchantAccount, $skin, $sharedSecret, $currency, array $entities, array $webservice, $updateChargeAmount)
+    public function __construct($platform, $merchantAccount, $skin, $sharedSecret, $currency, array $entities, array $webservice, $updateChargeAmount, $paymentMethods)
     {
         $this->platform = $platform;
         $this->merchantAccount = $merchantAccount;
@@ -50,6 +51,7 @@ class AdyenService
         $this->entities = $entities;
         $this->webservice = $webservice;
         $this->updateChargeAmount = $updateChargeAmount;
+        $this->paymentMethods = $paymentMethods;
     }
 
     /**
@@ -133,7 +135,7 @@ class AdyenService
             'shopperReference'  => $subscription->getId(),
             'recurringContract' => 'RECURRING',
             'resURL'            => $returnUrl,
-            'allowedMethods'    => 'mc,visa,amex',
+            'allowedMethods'    => $this->paymentMethods,
             'skipSelection'		=> 'true'
         );
 
@@ -182,7 +184,7 @@ class AdyenService
             'shopperReference'  => $subscription->getId(),
             'recurringContract' => 'RECURRING',
             'resURL'            => $returnUrl,
-            'allowedMethods'    => 'mc,visa,amex',
+            'allowedMethods'    => $this->paymentMethods,
             'skipSelection'		=> 'true'
         );
 
