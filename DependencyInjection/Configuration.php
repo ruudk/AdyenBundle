@@ -35,6 +35,7 @@ class Configuration
                 ->scalarNode('webservice_username')->isRequired()->end()
                 ->scalarNode('webservice_password')->isRequired()->end()
                 ->scalarNode('payment_methods')->defaultValue('mc,visa,amex')->end()
+                ->scalarNode('orm_entity_manager')->defaultValue('doctrine.orm.default_entity_manager')->end()
             ->end();
 
         return $treeBuilder->buildTree();
