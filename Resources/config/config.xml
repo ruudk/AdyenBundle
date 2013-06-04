@@ -34,17 +34,11 @@
 			<call method="setEventDispatcher">
 				 <argument type="service" id="event_dispatcher" />
 			</call>
-			<call method="setEntityManager">
-				 <argument>%adyen.orm_entity_manager%</argument>
-			</call>
         </service>
 
 		<service id="adyen.notification" class="%adyen.notification.class%">
 			<argument type="service" id="adyen.service" />
 			<argument>%kernel.logs_dir%</argument>
-			<call method="setEntityManager">
-				 <argument>%adyen.orm_entity_manager%</argument>
-			</call>
         </service>
 	</services>
 </container>
