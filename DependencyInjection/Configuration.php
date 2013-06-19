@@ -11,14 +11,14 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
  */
 class Configuration
 {
-    public function getConfigTree($debug)
+    public function getConfigTree()
     {
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('adyen', 'array');
 
         $rootNode
             ->children()
-                    ->scalarNode('platform')
+                ->scalarNode('platform')
                     ->validate()
                         ->ifNotInArray(array('live', 'test'))
                         ->thenInvalid('The %s platform is not supported')

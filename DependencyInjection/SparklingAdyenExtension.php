@@ -2,6 +2,7 @@
 
 namespace Sparkling\AdyenBundle\DependencyInjection;
 
+use Symfony\Component\DependencyInjection\Alias;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -24,7 +25,7 @@ class SparklingAdyenExtension extends Extension
         $processor     = new Processor();
         $configuration = new Configuration();
 
-        $config = $processor->process($configuration->getConfigTree($container->getParameter('kernel.debug')), $configs);
+        $config = $processor->process($configuration->getConfigTree(), $configs);
 
         $loader->load('config.xml');
 
@@ -40,14 +41,8 @@ class SparklingAdyenExtension extends Extension
         $container->setParameter('adyen.webservice_username', $config['webservice_username']);
         $container->setParameter('adyen.webservice_password', $config['webservice_password']);
         $container->setParameter('adyen.payment_methods', $config['payment_methods']);
-        $container->setParameter('adyen.orm_entity_manager', $config['orm_entity_manager']);
 
-        $container->getDefinition('adyen.service')->addMethodCall("setEntityManager", array(
-            new Reference($config['orm_entity_manager'])
-        ));
-        $container->getDefinition('adyen.notification')->addMethodCall("setEntityManager", array(
-            new Reference($config['orm_entity_manager'])
-        ));
+        $container->setAlias('adyen.orm_entity_manager', new Alias($config['orm_entity_manager']));
     }
 
     public function getXsdValidationBasePath()

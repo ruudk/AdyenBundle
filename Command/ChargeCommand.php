@@ -29,7 +29,7 @@ class ChargeCommand extends Command
     {
         $this->container = $this->getApplication()->getKernel()->getContainer();
 
-        $this->em = $this->container->get($this->container->getParameter('adyen.orm_entity_manager'));
+        $this->em = $this->container->get('adyen.orm_entity_manager');
         $this->adyen = $this->container->get('adyen.service');
     }
 

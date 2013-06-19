@@ -1,6 +1,8 @@
 AdyenBundle
 ===========
 
+[![Build Status](https://travis-ci.org/sparklingapp/AdyenBundle.png?branch=master)](https://travis-ci.org/sparklingapp/AdyenBundle)
+
 This bundle is used for Sparkling and Apoio to handle our recurring billing process.
 
 Please checkout the Example application here: http://github.com/sparklingapp/AdyenBundleExample

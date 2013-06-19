@@ -20,7 +20,7 @@ class DisableContractCommand extends Command
     {
         $this->container = $this->getApplication()->getKernel()->getContainer();
 
-        $this->em = $this->container->get($this->container->getParameter('adyen.orm_entity_manager'));
+        $this->em = $this->container->get('adyen.orm_entity_manager');
     }
 
     protected function configure()
