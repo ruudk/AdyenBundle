@@ -40,6 +40,7 @@ class SparklingAdyenExtension extends Extension
         $container->setParameter('adyen.webservice_username', $config['webservice_username']);
         $container->setParameter('adyen.webservice_password', $config['webservice_password']);
         $container->setParameter('adyen.payment_methods', $config['payment_methods']);
+        $container->setParameter('adyen.orm_entity_manager', $config['orm_entity_manager']);
 
         $container->getDefinition('adyen.service')->addMethodCall("setEntityManager", array(
             new Reference($config['orm_entity_manager'])
